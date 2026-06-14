@@ -31,21 +31,36 @@ function getSecondaryAuth() {
 
 export async function createUserAccount({ email, password, name, role, division }) {
   const secondaryAuth = getSecondaryAuth()
+  let uid
 
-  const cred = await createUserWithEmailAndPassword(secondaryAuth, email, password)
-  await updateProfile(cred.user, { displayName: name })
-  await secondaryAuth.signOut()
+  try {
+    // Try creating new account
+    const cred = await createUserWithEmailAndPassword(secondaryAuth, email, password)
+    await updateProfile(cred.user, { displayName: name })
+    uid = cred.user.uid
+  } catch (e) {
+    if (e.code === 'auth/email-already-in-use') {
+      // Email exists in Auth — sign in to get UID, then create Firestore profile
+      const cred = await signInWithEmailAndPassword(secondaryAuth, email, password)
+      uid = cred.user.uid
+    } else {
+      throw e
+    }
+  } finally {
+    await secondaryAuth.signOut()
+  }
 
-  await setDoc(doc(db, 'users', cred.user.uid), {
-    uid: cred.user.uid,
+  // Create or overwrite Firestore profile
+  await setDoc(doc(db, 'users', uid), {
+    uid,
     email,
     name,
     role,
     division,
     createdAt: serverTimestamp(),
-  })
+  }, { merge: true })
 
-  return cred.user.uid
+  return uid
 }
 
 export async function getAllUsers() {

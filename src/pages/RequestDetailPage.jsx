@@ -2,12 +2,13 @@ import { useState } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import {
   ArrowLeft, Edit2, Trash2, ExternalLink, Calendar, User,
-  MessageSquare, Upload, Save, X,
+  Save, X, Upload, FileText, Image as ImageIcon,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import useTicketStore from '../store/ticketStore'
 import useAuthStore from '../store/authStore'
-import { updateTicket, deleteTicket, uploadFile } from '../services/ticketService'
+import { updateTicket, deleteTicket } from '../services/ticketService'
+import { uploadToCloudinary, formatFileSize } from '../services/cloudinaryService'
 import StatusBadge from '../components/common/StatusBadge'
 import { formatDate, formatDateTime, isOverdue } from '../utils/helpers'
 import { STATUS } from '../utils/constants'
@@ -28,11 +29,11 @@ export default function RequestDetailPage() {
   const { profile } = useAuthStore()
   const ticket = tickets.find((t) => t.id === id)
 
-  const isAdmin = profile?.role === 'admin'
+  const isAdmin = profile?.role === 'admin' || profile?.role === 'branding'
   const [editing, setEditing] = useState(false)
   const [form, setForm] = useState({})
-  const [finalFile, setFinalFile] = useState(null)
   const [saving, setSaving] = useState(false)
+  const [finalFile, setFinalFile] = useState(null)
 
   if (!ticket) {
     return (
@@ -59,15 +60,18 @@ export default function RequestDetailPage() {
     try {
       let data = { ...form }
       if (finalFile) {
-        const url = await uploadFile(finalFile, `finals/${ticket.id}/${Date.now()}_${finalFile.name}`)
-        data.finalProjectLink = url
+        toast.loading('Mengupload file…', { id: 'upload' })
+        const result = await uploadToCloudinary(finalFile, 'finals')
+        data.finalProjectLink = result.url
+        data.finalFileName = result.fileName
+        toast.success('File diupload!', { id: 'upload' })
       }
       await updateTicket(id, data)
       toast.success('Ticket updated!')
       setEditing(false)
       setFinalFile(null)
     } catch (e) {
-      toast.error('Update failed. Try again.')
+      toast.error('Update failed: ' + e.message, { id: 'upload' })
     } finally {
       setSaving(false)
     }
@@ -171,29 +175,43 @@ export default function RequestDetailPage() {
             {editing ? (
               <div className="space-y-3">
                 <div>
-                  <label className="label">Final Project Link</label>
+                  <label className="label">Link Final Project</label>
                   <input
                     className="input"
-                    placeholder="https://drive.google.com/..."
-                    value={form.finalProjectLink}
+                    placeholder="https://drive.google.com/... atau Figma, dll"
+                    value={form.finalProjectLink || ''}
                     onChange={(e) => setForm((f) => ({ ...f, finalProjectLink: e.target.value }))}
                   />
+                  <p className="text-[11px] text-neutral-400 mt-1">Google Drive, Figma, atau URL lainnya</p>
                 </div>
                 <div>
-                  <label className="label">Upload Final File</label>
-                  <div className="border-2 border-dashed border-neutral-200 rounded-lg p-3 text-center hover:border-brand-300">
+                  <label className="label">Upload File Final</label>
+                  <div className={`border-2 border-dashed rounded-lg p-3 transition-colors ${finalFile ? 'border-brand-300 bg-brand-50/30' : 'border-neutral-200 hover:border-brand-300'}`}>
                     {finalFile ? (
-                      <div className="flex items-center justify-center gap-2 text-sm text-neutral-600">
-                        <span className="truncate">{finalFile.name}</span>
-                        <button type="button" onClick={() => setFinalFile(null)}>
-                          <X className="w-4 h-4 text-neutral-400" />
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-lg bg-brand-100 flex items-center justify-center flex-shrink-0">
+                          {finalFile.type?.startsWith('image') ? (
+                            <ImageIcon className="w-4 h-4 text-brand-600" />
+                          ) : (
+                            <FileText className="w-4 h-4 text-brand-600" />
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="text-xs font-medium text-neutral-700 truncate">{finalFile.name}</div>
+                          <div className="text-[11px] text-neutral-400">{formatFileSize(finalFile.size)}</div>
+                        </div>
+                        <button type="button" onClick={() => setFinalFile(null)} className="text-neutral-400 hover:text-red-500">
+                          <X className="w-4 h-4" />
                         </button>
                       </div>
                     ) : (
-                      <label className="cursor-pointer">
-                        <Upload className="w-4 h-4 text-neutral-400 mx-auto mb-1" />
-                        <span className="text-xs text-neutral-400">Upload final design file</span>
-                        <input type="file" className="hidden" onChange={(e) => setFinalFile(e.target.files?.[0])} />
+                      <label className="cursor-pointer flex flex-col items-center gap-1">
+                        <Upload className="w-4 h-4 text-neutral-400" />
+                        <span className="text-xs text-neutral-400">Upload hasil desain final</span>
+                        <span className="text-[11px] text-neutral-300">Gambar, PDF, AI, PSD, ZIP</span>
+                        <input type="file" className="hidden"
+                          accept="image/*,.pdf,.ai,.psd,.zip"
+                          onChange={(e) => setFinalFile(e.target.files?.[0] || null)} />
                       </label>
                     )}
                   </div>

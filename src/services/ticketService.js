@@ -16,13 +16,10 @@ import { db, storage } from '../firebase/config'
 
 export function subscribeToTickets(callback, userRole, userDivision) {
   const col = collection(db, 'requests')
-  let q
-
-  if (userRole === 'admin') {
-    q = query(col, orderBy('createdAt', 'desc'))
-  } else {
-    q = query(col, where('division', '==', userDivision), orderBy('createdAt', 'desc'))
-  }
+  // Admin & branding team see all requests; other divisions see only their own
+  const q = (userRole === 'admin' || userRole === 'branding')
+    ? query(col, orderBy('createdAt', 'desc'))
+    : query(col, where('division', '==', userDivision), orderBy('createdAt', 'desc'))
 
   return onSnapshot(q, (snap) => {
     const tickets = snap.docs.map((d, i) => ({

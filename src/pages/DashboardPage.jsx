@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import {
-  TicketCheck, Clock, CheckCircle, AlertTriangle, TrendingUp, Plus,
+  TicketCheck, CheckCircle, AlertTriangle, TrendingUp, Plus,
 } from 'lucide-react'
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell,
@@ -10,7 +10,7 @@ import useTicketStore from '../store/ticketStore'
 import useAuthStore from '../store/authStore'
 import StatusBadge from '../components/common/StatusBadge'
 import { formatDate, timeAgo, isOverdue } from '../utils/helpers'
-import { STATUS_COLORS, DIVISIONS } from '../utils/constants'
+import { STATUS_COLORS, getAccessLevel } from '../utils/constants'
 
 function StatCard({ label, value, icon: Icon, color, sub }) {
   return (
@@ -30,28 +30,51 @@ function StatCard({ label, value, icon: Icon, color, sub }) {
 export default function DashboardPage() {
   const { tickets } = useTicketStore()
   const { profile } = useAuthStore()
-  const stats = useTicketStore((s) => s.getStats())
+  const access = getAccessLevel(profile?.role)
+  const isBrandingOrAdmin = access === 'admin' || access === 'branding'
+
+  // Requester only sees their own division's data in dashboard
+  const visibleTickets = useMemo(() =>
+    isBrandingOrAdmin
+      ? tickets
+      : tickets.filter((t) => t.division === profile?.division),
+  [tickets, isBrandingOrAdmin, profile])
+
+  const stats = useMemo(() => {
+    const now = new Date()
+    return {
+      total:     visibleTickets.length,
+      ongoing:   visibleTickets.filter((t) => ['In Progress', 'Review', 'Revision'].includes(t.status)).length,
+      pending:   visibleTickets.filter((t) => t.status === 'Pending').length,
+      completed: visibleTickets.filter((t) => t.status === 'Done').length,
+      overdue:   visibleTickets.filter((t) => {
+        if (t.status === 'Done') return false
+        const d = t.expectedDelivery?.toDate ? t.expectedDelivery.toDate() : t.expectedDelivery ? new Date(t.expectedDelivery) : null
+        return d && d < now
+      }).length,
+    }
+  }, [visibleTickets])
 
   const recentTickets = useMemo(() =>
-    [...tickets].slice(0, 5),
-  [tickets])
+    [...visibleTickets].slice(0, 5),
+  [visibleTickets])
 
   const divisionData = useMemo(() => {
     const counts = {}
-    tickets.forEach((t) => {
+    visibleTickets.forEach((t) => {
       const short = t.division?.split(' ')[0] || 'Unknown'
       counts[short] = (counts[short] || 0) + 1
     })
     return Object.entries(counts).map(([name, count]) => ({ name, count }))
-  }, [tickets])
+  }, [visibleTickets])
 
   const statusData = useMemo(() =>
     Object.entries(STATUS_COLORS).map(([status, c]) => ({
       status,
-      count: tickets.filter((t) => t.status === status).length,
+      count: visibleTickets.filter((t) => t.status === status).length,
       color: c.calendar,
     })),
-  [tickets])
+  [visibleTickets])
 
   return (
     <div className="space-y-6">
@@ -61,7 +84,11 @@ export default function DashboardPage() {
           <h2 className="text-lg font-semibold text-neutral-800">
             Good {getGreeting()}, {profile?.name?.split(' ')[0]} 👋
           </h2>
-          <p className="text-sm text-neutral-500 mt-0.5">Here's what's happening in Branding & Visual today.</p>
+          <p className="text-sm text-neutral-500 mt-0.5">
+            {isBrandingOrAdmin
+              ? 'Overview semua request masuk ke Branding & Visual.'
+              : `Menampilkan request dari divisi ${profile?.division}.`}
+          </p>
         </div>
         <Link to="/requests/new" className="btn-primary flex-shrink-0">
           <Plus className="w-4 h-4" />

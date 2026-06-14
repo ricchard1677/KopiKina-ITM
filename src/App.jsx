@@ -2,6 +2,7 @@ import { Routes, Route, Navigate } from 'react-router-dom'
 import { useAuthListener } from './hooks/useAuth'
 import { useTicketsListener } from './hooks/useTickets'
 import useAuthStore from './store/authStore'
+import { getAccessLevel } from './utils/constants'
 import Layout from './components/layout/Layout'
 import LoginPage from './pages/LoginPage'
 import DashboardPage from './pages/DashboardPage'
@@ -17,20 +18,30 @@ import LoadingScreen from './components/common/LoadingScreen'
 function AuthenticatedApp() {
   useTicketsListener()
   const { profile } = useAuthStore()
-  const isAdmin = profile?.role === 'admin'
+  const access = getAccessLevel(profile?.role)
+
+  const isBrandingOrAdmin = access === 'admin' || access === 'branding'
+  const isAdmin = access === 'admin'
 
   return (
     <Layout>
       <Routes>
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
-        <Route path="/dashboard" element={<DashboardPage />} />
-        <Route path="/requests" element={<RequestsPage />} />
+
+        {/* All roles */}
+        <Route path="/dashboard"    element={<DashboardPage />} />
+        <Route path="/requests"     element={<RequestsPage />} />
         <Route path="/requests/new" element={<NewRequestPage />} />
         <Route path="/requests/:id" element={<RequestDetailPage />} />
-        <Route path="/calendar" element={<CalendarPage />} />
-        <Route path="/assets" element={<AssetsPage />} />
-        <Route path="/kanban" element={<KanbanPage />} />
+        <Route path="/calendar"     element={<CalendarPage />} />
+
+        {/* Branding & Admin only */}
+        {isBrandingOrAdmin && <Route path="/kanban" element={<KanbanPage />} />}
+        {isBrandingOrAdmin && <Route path="/assets" element={<AssetsPage />} />}
+
+        {/* Admin only */}
         {isAdmin && <Route path="/admin/users" element={<AdminUsersPage />} />}
+
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>
     </Layout>

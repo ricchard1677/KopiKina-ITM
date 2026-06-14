@@ -4,9 +4,15 @@ import {
   FolderOpen, Kanban, X, Users,
 } from 'lucide-react'
 import useAuthStore from '../../store/authStore'
-import { ROLE_LABELS } from '../../utils/constants'
+import { ROLE_LABELS, getAccessLevel } from '../../utils/constants'
 
-const NAV = [
+const NAV_REQUESTER = [
+  { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+  { to: '/requests',  icon: TicketCheck,     label: 'Requests' },
+  { to: '/calendar',  icon: CalendarDays,    label: 'Calendar' },
+]
+
+const NAV_BRANDING = [
   { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
   { to: '/requests',  icon: TicketCheck,     label: 'Requests' },
   { to: '/calendar',  icon: CalendarDays,    label: 'Calendar' },
@@ -14,12 +20,45 @@ const NAV = [
   { to: '/assets',    icon: FolderOpen,      label: 'Brand Assets' },
 ]
 
-const ADMIN_NAV = [
+const NAV_ADMIN = [
+  { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+  { to: '/requests',  icon: TicketCheck,     label: 'Requests' },
+  { to: '/calendar',  icon: CalendarDays,    label: 'Calendar' },
+  { to: '/kanban',    icon: Kanban,          label: 'Kanban Board' },
+  { to: '/assets',    icon: FolderOpen,      label: 'Brand Assets' },
+]
+
+const NAV_ADMIN_SECTION = [
   { to: '/admin/users', icon: Users, label: 'Manajemen Akun' },
 ]
 
+function NavItem({ to, icon: Icon, label, onClose }) {
+  return (
+    <NavLink
+      to={to}
+      onClick={onClose}
+      className={({ isActive }) =>
+        `flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
+          isActive
+            ? 'bg-brand-50 text-brand-700'
+            : 'text-neutral-600 hover:bg-neutral-100 hover:text-neutral-800'
+        }`
+      }
+    >
+      <Icon className="w-4 h-4 flex-shrink-0" />
+      {label}
+    </NavLink>
+  )
+}
+
 export default function Sidebar({ open, onClose }) {
   const { profile } = useAuthStore()
+  const access = getAccessLevel(profile?.role)
+
+  const navItems =
+    access === 'admin'    ? NAV_ADMIN :
+    access === 'branding' ? NAV_BRANDING :
+    NAV_REQUESTER
 
   return (
     <aside
@@ -52,46 +91,18 @@ export default function Sidebar({ open, onClose }) {
 
       {/* Nav */}
       <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
-        {NAV.map(({ to, icon: Icon, label }) => (
-          <NavLink
-            key={to}
-            to={to}
-            onClick={onClose}
-            className={({ isActive }) =>
-              `flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
-                isActive
-                  ? 'bg-brand-50 text-brand-700'
-                  : 'text-neutral-600 hover:bg-neutral-100 hover:text-neutral-800'
-              }`
-            }
-          >
-            <Icon className="w-4 h-4 flex-shrink-0" />
-            {label}
-          </NavLink>
+        {navItems.map((item) => (
+          <NavItem key={item.to} {...item} onClose={onClose} />
         ))}
 
         {/* Admin-only section */}
-        {profile?.role === 'admin' && (
+        {access === 'admin' && (
           <div className="pt-3 mt-3 border-t border-neutral-100">
             <p className="text-[10px] font-semibold text-neutral-400 uppercase tracking-widest px-3 mb-1.5">
               Admin
             </p>
-            {ADMIN_NAV.map(({ to, icon: Icon, label }) => (
-              <NavLink
-                key={to}
-                to={to}
-                onClick={onClose}
-                className={({ isActive }) =>
-                  `flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all ${
-                    isActive
-                      ? 'bg-brand-50 text-brand-700'
-                      : 'text-neutral-600 hover:bg-neutral-100 hover:text-neutral-800'
-                  }`
-                }
-              >
-                <Icon className="w-4 h-4 flex-shrink-0" />
-                {label}
-              </NavLink>
+            {NAV_ADMIN_SECTION.map((item) => (
+              <NavItem key={item.to} {...item} onClose={onClose} />
             ))}
           </div>
         )}

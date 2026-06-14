@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useForm } from 'react-hook-form'
 import { Plus, Edit2, Trash2, X, Save, Users, Eye, EyeOff } from 'lucide-react'
 import toast from 'react-hot-toast'
@@ -12,6 +12,18 @@ import EmptyState from '../components/common/EmptyState'
 
 const ROLE_OPTIONS = Object.entries(ROLE_LABELS).map(([value, label]) => ({ value, label }))
 
+const ROLE_DIVISION_MAP = {
+  admin:       'Branding & Visual',
+  branding:    'Branding & Visual',
+  pmo:         'PMO',
+  sales:       'Sales',
+  ep_internal: 'EP (Internal)',
+  ep_popup:    'EP Pop Up (External)',
+  operational: 'Operational',
+  procurement: 'Procurement',
+  hrd:         'HRD',
+}
+
 function RoleBadge({ role }) {
   const isAdmin = role === 'admin'
   return (
@@ -23,7 +35,14 @@ function RoleBadge({ role }) {
 
 function CreateUserForm({ onSuccess, onClose }) {
   const [showPw, setShowPw] = useState(false)
-  const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm()
+  const { register, handleSubmit, watch, setValue, formState: { errors, isSubmitting } } = useForm()
+
+  const selectedRole = watch('role')
+  useEffect(() => {
+    if (selectedRole && ROLE_DIVISION_MAP[selectedRole]) {
+      setValue('division', ROLE_DIVISION_MAP[selectedRole])
+    }
+  }, [selectedRole, setValue])
 
   async function onSubmit(data) {
     try {
@@ -32,10 +51,10 @@ function CreateUserForm({ onSuccess, onClose }) {
       onSuccess()
     } catch (e) {
       const messages = {
-        'auth/email-already-in-use':    'Email sudah terdaftar.',
+        'auth/invalid-credential':      'Password salah untuk email yang sudah terdaftar.',
         'auth/invalid-email':           'Format email tidak valid.',
         'auth/weak-password':           'Password terlalu lemah, min. 6 karakter.',
-        'auth/operation-not-allowed':   'Email/Password sign-in belum diaktifkan di Firebase Console. Buka Authentication → Sign-in method → Email/Password → Enable.',
+        'auth/operation-not-allowed':   'Email/Password sign-in belum diaktifkan. Buka Firebase Console → Authentication → Sign-in method → Email/Password → Enable.',
         'auth/network-request-failed':  'Koneksi gagal. Periksa internet.',
         'auth/configuration-not-found': 'Firebase belum dikonfigurasi. Cek file .env.local.',
       }
@@ -111,7 +130,7 @@ function CreateUserForm({ onSuccess, onClose }) {
 
 function EditUserModal({ user, onClose, onSuccess }) {
   const [showPw, setShowPw] = useState(false)
-  const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm({
+  const { register, handleSubmit, watch, setValue, formState: { errors, isSubmitting } } = useForm({
     defaultValues: {
       name:     user.name,
       email:    user.email,
@@ -120,6 +139,15 @@ function EditUserModal({ user, onClose, onSuccess }) {
       password: '',
     },
   })
+
+  const selectedRole = watch('role')
+  const isFirstRender = useRef(true)
+  useEffect(() => {
+    if (isFirstRender.current) { isFirstRender.current = false; return }
+    if (selectedRole && ROLE_DIVISION_MAP[selectedRole]) {
+      setValue('division', ROLE_DIVISION_MAP[selectedRole])
+    }
+  }, [selectedRole, setValue])
 
   async function onSubmit(data) {
     try {
