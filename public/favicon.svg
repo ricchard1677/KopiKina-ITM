@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 64 64">
+  <defs>
+    <clipPath id="r">
+      <rect width="64" height="64" rx="14"/>
+    </clipPath>
+  </defs>
+  <rect width="64" height="64" rx="14" fill="#AB1F27"/>
+  <image href="/Konten Guideline 2026/Logo Kopikina 2026/Logo Kopikina_FIX-02.png"
+    x="4" y="4" width="56" height="56"
+    clip-path="url(#r)" preserveAspectRatio="xMidYMid meet"/>
+</svg>

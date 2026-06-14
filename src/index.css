@@ -1,0 +1,50 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * { box-sizing: border-box; }
+  body {
+    @apply bg-neutral-50 text-neutral-800 font-sans antialiased;
+  }
+  ::-webkit-scrollbar { @apply w-1.5 h-1.5; }
+  ::-webkit-scrollbar-track { @apply bg-neutral-100; }
+  ::-webkit-scrollbar-thumb { @apply bg-neutral-300 rounded-full; }
+  ::-webkit-scrollbar-thumb:hover { @apply bg-neutral-400; }
+}
+
+@layer components {
+  .btn-primary {
+    @apply inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-brand-600 text-white text-sm font-medium hover:bg-brand-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  .btn-secondary {
+    @apply inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-white text-neutral-700 text-sm font-medium border border-neutral-200 hover:bg-neutral-50 transition-colors;
+  }
+  .btn-ghost {
+    @apply inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-neutral-600 text-sm font-medium hover:bg-neutral-100 transition-colors;
+  }
+  .card {
+    @apply bg-white rounded-xl border border-neutral-200 shadow-card;
+  }
+  .input {
+    @apply w-full px-3 py-2 text-sm rounded-lg border border-neutral-200 bg-white text-neutral-800 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-brand-300 focus:border-brand-400 transition-all;
+  }
+  .label {
+    @apply block text-xs font-medium text-neutral-600 mb-1.5;
+  }
+  .badge {
+    @apply inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium;
+  }
+}
+
+/* FullCalendar overrides — KopiKina brand */
+.fc { font-family: 'Inter', sans-serif !important; font-size: 13px !important; }
+.fc .fc-toolbar-title { font-size: 16px !important; font-weight: 600 !important; color: #1c1917 !important; }
+.fc .fc-button { background-color: #ab1f27 !important; border-color: #ab1f27 !important; font-size: 12px !important; padding: 4px 10px !important; font-family: 'Inter', sans-serif !important; }
+.fc .fc-button:hover { background-color: #911920 !important; border-color: #911920 !important; }
+.fc .fc-button-active { background-color: #7a181e !important; border-color: #7a181e !important; }
+.fc-theme-standard td, .fc-theme-standard th, .fc-theme-standard .fc-scrollgrid { border-color: #e7e5e4 !important; }
+.fc .fc-daygrid-day-number { color: #57534e !important; font-size: 12px !important; }
+.fc .fc-col-header-cell-cushion { color: #78716c !important; font-size: 11px !important; font-weight: 600 !important; text-transform: uppercase !important; letter-spacing: 0.05em !important; }
+.fc-event { border-radius: 4px !important; border: none !important; padding: 1px 4px !important; font-size: 11px !important; font-weight: 500 !important; cursor: pointer !important; }
+.fc .fc-daygrid-day.fc-day-today { background-color: #fdf2f2 !important; }
